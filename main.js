@@ -31,15 +31,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // TASK 1: User Preferences Functions
 function saveUserPreferences() {
+    localStorage.setItem('userName', userNameInput.value);
+    localStorage.setItem('userTheme', themeSelect.value);
+    
     // TODO: Get values from userNameInput and themeSelect
     // TODO: Save them to localStorage using setItem
     // TODO: Apply the theme and show welcome message
     // HINT: Check the slides for localStorage.setItem() syntax
+
+    applyTheme(themeSelect.value);
+    showWelcomeMessage(userNameInput.value);
+    updateLastSaved();
     
     console.log("Save preferences function called - complete this!");
 }
 
 function loadUserPreferences() {
+    const savedName = localStorage.getItem('userName');
+    const savedTheme = localStorage.getItem('userTheme');
+
+    if (savedName) {
+        userNameInput.value = savedName;
+        showWelcomeMessage(savedName);
+    }
+
+    if (savedTheme) {
+        themeSelect.value = savedTheme;
+        applyTheme(savedTheme);
+    }
+    
     // TODO: Get saved name and theme from localStorage using getItem
     // TODO: Populate the form fields if data exists
     // TODO: Apply saved theme and show welcome message
@@ -51,6 +71,8 @@ function loadUserPreferences() {
 function applyTheme(theme) {
     // TODO: Set the data-theme attribute on document.body
     // HINT: document.body.setAttribute('data-theme', theme);
+
+    document.body.setAttribute('data-theme', theme);
     
     console.log("Apply theme function called - complete this!");
 }
@@ -58,6 +80,8 @@ function applyTheme(theme) {
 function showWelcomeMessage(name) {
     // TODO: Display a personalized welcome message
     // HINT: Use welcomeMessage.textContent or innerHTML
+
+    welcomeMessage.innerHTML =  `Welcome ${name}!`;
     
     console.log("Show welcome message function called - complete this!");
 }
@@ -65,8 +89,29 @@ function showWelcomeMessage(name) {
 // TASK 2: High Scores Functions
 function addScore() {
     // TODO: Get values from gameNameInput and scoreValueInput
+    let gameName = gameNameInput.value;
+    let scoreValue = scoreValueInput.value;
+    
     // TODO: Create a score object with game name, score, and date
+
+    const score = {
+        game: gameName,
+        score: parseInt(scoreValue),
+        date: new Date()
+    }
+    
     // TODO: Get existing scores from localStorage (or create empty array)
+
+    let scores = JSON.parse(localStorage.getItem('gameScores')) || [];
+    scores.push(score);
+    localStorage.setItem('gameScores', JSON.stringify(scores));
+
+    gameNameInput.value = '';
+    scoreValueInput.value = '';
+    scoresList.innerHTML = '';
+    loadScores();
+    updateLastSaved();
+
     // TODO: Add new score to array
     // TODO: Save updated array back to localStorage using JSON.stringify
     // TODO: Clear input fields and refresh display
@@ -81,6 +126,20 @@ function loadScores() {
     // TODO: Sort scores by score value (highest first)
     // TODO: Display top 3 scores in the scoresList
     // HINT: Remember to handle the case where no scores exist yet
+
+    let scores = JSON.parse(localStorage.getItem('gameScores')) || [];
+
+    scores.sort((a,b) => b.score - a.score); //sort by score, highest score is first
+    console.log(scores);
+
+    const topScores = scores.slice(0,3);
+
+    if (topScores.length > 0){
+        for(let i = 0; i < topScores.length; i++){
+            const scoreElement = createScoreElement(topScores[i], i);
+            scoresList.appendChild(scoreElement);
+        }
+    }
     
     console.log("Load scores function called - complete this!");
 }
@@ -89,6 +148,11 @@ function clearAllScores() {
     // TODO: Remove scores from localStorage using removeItem
     // TODO: Clear the display
     // TODO: Show confirmation message
+
+    localStorage.removeItem('gameScores');
+    scoresList.innerHTML = '';
+    alert('Scores cleared.');
+    updateLastSaved();
     
     console.log("Clear scores function called - complete this!");
 }
@@ -99,6 +163,11 @@ function saveNotes() {
     // TODO: Save to localStorage
     // TODO: Update last saved time
     // TODO: Show confirmation to user
+
+    const notes = notesArea.value;
+    localStorage.setItem('dashboardNotes', notes);
+    updateLastSaved();
+    alert('Notes saved.');
     
     console.log("Save notes function called - complete this!");
 }
@@ -106,6 +175,11 @@ function saveNotes() {
 function loadNotes() {
     // TODO: Get saved notes from localStorage
     // TODO: Put text back in notesArea if it exists
+
+    const savedNotes = localStorage.getItem('dashboardNotes');
+    if (savedNotes) {
+        notesArea.value = savedNotes;
+    }
     
     console.log("Load notes function called - complete this!");
 }
@@ -114,6 +188,11 @@ function clearNotes() {
     // TODO: Clear the textarea
     // TODO: Remove notes from localStorage
     // TODO: Show confirmation message
+
+    notesArea.value = '';
+    localStorage.removeItem('dashboardNotes');
+    alert('Notes cleared.');
+    updateLastSaved();
     
     console.log("Clear notes function called - complete this!");
 }
@@ -123,9 +202,15 @@ function viewStorageData() {
     // TODO: Loop through all localStorage data and console.log it
     // TODO: Show user how many items are stored
     // HINT: Use localStorage.length and localStorage.key(i)
-    
+
     console.log("View storage function called - complete this!");
     console.log("Total items in localStorage:", localStorage.length);
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        console.log(`${key}:`, value);
+    }
 }
 
 function resetDashboard() {
@@ -133,7 +218,20 @@ function resetDashboard() {
     // TODO: If confirmed, use localStorage.clear() to remove all data
     // TODO: Reset all form fields and displays
     // TODO: Show success message
-    
+
+    const confirmed = confirm('Are you sure you want to reset everything?');
+    if (confirmed) {
+        localStorage.clear();
+        userNameInput.value = '';
+        themeSelect.value = 'light';
+        applyTheme('light');
+        welcomeMessage.innerHTML = '';
+        scoresList.innerHTML = '';
+        notesArea.value = '';
+        lastSavedDiv.innerHTML = '';
+        alert('Dashboard reset.');
+    }
+
     console.log("Reset dashboard function called - complete this!");
 }
 
@@ -142,7 +240,11 @@ function updateLastSaved() {
     // TODO: Save to localStorage as 'lastSaved'
     // TODO: Display in lastSavedDiv
     // HINT: Use new Date().toLocaleString()
-    
+
+    const now = new Date().toLocaleString();
+    localStorage.setItem('lastSaved', now);
+    lastSavedDiv.innerHTML = `Last saved: ${now}`;
+
     console.log("Update last saved function called - complete this!");
 }
 
